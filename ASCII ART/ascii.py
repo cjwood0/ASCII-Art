@@ -26,6 +26,12 @@ def getAverageL(image):
     # Get the average.
     return np.average(im.reshape(w*h))
 
+def getAverageRGB(image):
+
+    im = np.array(image)
+    return np.mean(im, (0,1)).astype(int).astype(str)
+
+
 def covertImageToAscii(file_name, cols, scale, moreLevels):
     """
     Given Image and dimensions (rows, cols), returns an m*n list of image.
@@ -33,8 +39,15 @@ def covertImageToAscii(file_name, cols, scale, moreLevels):
     # declare globals
     global gscale1, gscale2
 
-    # open image and convert to grey scale
-    image = Image.open(file_name).convert('L')
+    # open image
+    original_image = Image.open(file_name)
+
+    # convert image to rgb
+
+    rgb_image = original_image.convert('RGB')
+
+    # convert image to grey scale
+    image = original_image.convert('L')
 
     # Store the image dimensions.
     W, H = image.size[0], image.size[1]
@@ -59,6 +72,8 @@ def covertImageToAscii(file_name, cols, scale, moreLevels):
     
     # an ASCII image is a list of character strings
     aimg = []
+    aimg = []
+
     
     # generate the list of tile dimensions
     for j in range(rows):
@@ -82,7 +97,7 @@ def covertImageToAscii(file_name, cols, scale, moreLevels):
             
             # crop the image to extract the tile into another Image object
             img = image.crop((x1, y1, x2, y2))
-
+            rgbimg = rgb_image.crop((x1, y1, x2, y2))
             # get the average luminance
             avg = int(getAverageL(img))
             
@@ -92,15 +107,18 @@ def covertImageToAscii(file_name, cols, scale, moreLevels):
             else:
                 gsval = gscale2[int((avg*9)/255)]
 
-            # append the ASCII character to the string
-            aimg[j] += gsval
+            rgbavg = getAverageRGB(rgbimg)
+            rgbdiv = "<span style=\"color:rgb(%s)\">%s</span>"%(",".join(rgbavg), gsval)            
+
+            # append the span character to the string
+            aimg[j] += rgbdiv
         # return text image
     return aimg
 
 # main() function
 def main():
     # create parser
-    descStr = "This program converts an image into ASCII art."
+    descStr = "This program converts an image into HTML ASCII art."
     parser = argparse.ArgumentParser(description=descStr)
     
     # add expected arguments
@@ -115,7 +133,7 @@ def main():
     imgFile = args.imgFile
     
     # set output file
-    outFile = 'out.txt'
+    outFile = 'out.html'
     if args.outFile:
         outFile = args.outFile
     
@@ -135,11 +153,13 @@ def main():
 
     # open a new text file
     f = open(outFile, 'w')
-
+    f.write("<!DOCTYPE html>")
+    f.write('<body style="font-family:\'mono\'">')
     # write each string in the list to the new file
     for row in aimg:
-        f.write(row + '\n')
+        f.write(row + '<br />\n')
         # clean up
+    f.write('</body>')
     f.close()
     print("ASCII art written to %s" % outFile)
     
